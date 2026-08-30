@@ -40,13 +40,22 @@ If you use this repository, the abstraction executable, or the exported ONNX mod
 * **Why Full-Field Images Fail:** The abstraction algorithm computes 1D intensity histograms to detect dominant tissue clusters. Full-field fundus photographs introduce macular tissue, background pigmentation, and illumination gradients that distort peak detection, leading to unstable clustering and incorrect prompt extraction.
 
 ## 📂 Repository Structure
+
+Because the abstraction standalone executable exceeds GitHub's file size limit (>2GB), it has been compressed and split into two parts using 7-Zip (`abstraction.zip.001` and `abstraction.zip.002`).
+
 ```text
-├── abstraction.exe               # Standalone binary for adaptive histogram K-Means abstraction
+├── abstraction.zip.001           # Split archive part 1 (7-Zip multi-part volume)
+├── abstraction.zip.002           # Split archive part 2 (7-Zip multi-part volume)
 ├── OD_Edge_SAM_encoder.onnx      # Exported Hiera-Tiny Image Encoder (ONNX format)
 ├── OD_Edge_SAM_decoder.onnx      # Exported Mask Decoder & Prompt Engine (ONNX format)
 ├── LICENSE                       # CC BY 4.0 Legal Text
 └── README.md                     # Documentation file
 ```
+### 💡 How to extract abstraction.exe:
+
+1. Ensure both `abstraction.zip.001` and `abstraction.zip.002` are downloaded into the same directory.
+2. Use 7-Zip or WinRAR to right-click on abstraction.zip.001 and select Extract Here (or extract to a folder). The tool will automatically combine both parts and unpack abstraction.exe.
+
 ## 🛠️ Standalone Abstraction Engine (abstraction.exe)
 
 `abstraction.exe`  is a standalone Windows binary (no Python environment required). It pre‑conditions cropped fundus images by isolating intensity clusters in the Red (R) and Green (G) channels while suppressing background noise.
