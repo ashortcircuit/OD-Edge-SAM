@@ -13,9 +13,9 @@
 
 ## 📌 Overview
 
-This repository provides the official standalone abstraction executable and exported **ONNX models** for **OD-Edge-SAM**, a data-centric, edge-deployable framework for zero-shot Optic Disc (OD) segmentation on low-power embedded processors (such as the Raspberry Pi 5).
+This repository provides the standalone abstraction executable and the exported **ONNX models** for **OD-Edge-SAM**, an edge‑deployable framework for zero-shot Optic Disc (OD) segmentation on low-power embedded processors (such as the Raspberry Pi 5).
 
-By combining a deterministic **Adaptive Histogram-Guided Image Abstraction Layer** (`abstraction.exe`) with an edge-adapted Segment Anything Model 2.1 (SAM 2.1) Tiny architecture (`OD_Edge_SAM_encoder.onnx` and `OD_Edge_SAM_decoder.onnx`), this pipeline enables autonomous, real-time segmentation without requiring manual prompt clicks or target-cohort retraining.
+By combining an **Adaptive Histogram-Guided Image Abstraction Layer** (`abstraction.exe`) with an edge-adapted Segment Anything Model 2.1 (SAM 2.1) Tiny architecture (`OD_Edge_SAM_encoder.onnx` and `OD_Edge_SAM_decoder.onnx`), this pipeline enables fully autonomous segmentation without manual prompting or dataset‑specific retraining.
 
 ---
 
@@ -33,11 +33,11 @@ If you use this repository, the abstraction executable, or the exported ONNX mod
 ```
 ## ⚠️ Important: Input Image Cropping Requirement
 >[!IMPORTANT]
->OD-Edge-SAM requires Region-of-Interest (ROI) cropped images and CANNOT be executed directly on full-view retinal fundus photographs.
+>OD-Edge-SAM requires Region-of-Interest (ROI) cropped images and **CANNOT** be executed directly on full-view retinal fundus photographs.
 
 * **Required Input Region:** Each input image must be tightly cropped around the Optic Disc and its immediate Peripapillary Atrophy (PPA) margin.
 
-* **Why Full-Field Images Fail:** The abstraction algorithm computes 1D intensity histograms to detect dominant tissue clusters. Passing a full-view fundus photograph introduces background retinal tissue, macular pigmentation, and illumination gradients that distort peak detection, leading to improper K-Means centroid clustering and faulty prompt extraction.
+* **Why Full-Field Images Fail:** The abstraction algorithm computes 1D intensity histograms to detect dominant tissue clusters. Full-field fundus photographs introduce macular tissue, background pigmentation, and illumination gradients that distort peak detection, leading to unstable clustering and incorrect prompt extraction.
 
 ## 📂 Repository Structure
 ```text
@@ -49,7 +49,7 @@ If you use this repository, the abstraction executable, or the exported ONNX mod
 ```
 ## 🛠️ Standalone Abstraction Engine (abstraction.exe)
 
-`abstraction.exe` is a standalone Windows binary compiled to execute independently (no Python environment or external dependencies required). It pre-conditions cropped fundus images by isolating physiological clusters across the Red (R) and Green (G) channels while eliminating high-frequency background noise.
+`abstraction.exe`  is a standalone Windows binary (no Python environment required). It pre‑conditions cropped fundus images by isolating intensity clusters in the Red (R) and Green (G) channels while suppressing background noise.
 
 ### Command-Line Usage
 
@@ -59,8 +59,8 @@ abstraction.exe <input_crop_path> <output_abstracted_path> <output_hist_path> [-
 
 ### Modes & Sensitivity Settings
 * **BASE (Default):** Standard peak detection balance ($div=6.0$, $dist_R=25$, $dist_G=11$) suited for standard clinical crops.
-* **CONS (Conservative):** Requires prominent peak separation ($div=4.0$, $dist_R=40$, $dist_G=20$) to prevent oversegmentation on high-contrast margins.
-* **SENS (Sensitive):** Captures subtle low-amplitude peaks ($div=10.0$, $dist_R=10$, $dist_G=5$) in low-contrast or hazy fundus crops.
+* **CONS (Conservative):** Strong peak separation ($div=4.0$, $dist_R=40$, $dist_G=20$) to avoid oversegmentation on high-contrast margins.
+* **SENS (Sensitive):** Detects subtle low-amplitude peaks ($div=10.0$, $dist_R=10$, $dist_G=5$) in low-contrast or hazy fundus crops.
 
 ### Execution Examples
 ```bash
@@ -75,11 +75,11 @@ abstraction.exe "images/crop/sample.jpg" "images/abstracted/samplesens.jpg" "ima
 ```
 ## 🎯 Autonomous Prompting & ONNX Inference Pipeline
 
-The system segments the optic disc autonomously using an automated brightest-point prompting mechanism:
+The system segments the optic disc autonomously using a brightest‑point prompting mechanism:
 
-1. Autonomous Prompt Localization: Because the optic cup and neuroretinal rim exhibit the highest relative luminance in the cropped region, the script automatically identifies the brightest coordinate (`maxLoc`) within the central 15% ROI of the abstracted image.
-2. Coordinate Scaling: The detected point is mapped to the standard $1024 \times 1024$ tensor space and passed as a single positive point prompt $[\hat{x}, \hat{y}]$ to the Mask Decoder.
-3. Direct Disc Extraction: The resulting mask is applied directly onto the original raw crop via bitwise masking (`cv2.bitwise_and`) to yield the isolated segmented optic disc.
+1. Autonomous Prompt Localization: The optic cup and neuroretinal rim appear brightest in the cropped region. The script identifies the brightest coordinate  (`maxLoc`) within the central 15% radius ROI of the abstracted image.
+2. Coordinate Scaling: The detected point is mapped to SAM’s $1024\times1024$ input space and passed as a single positive point prompt $[\hat{x}, \hat{y}]$ to the Mask Decoder.
+3. Direct Disc Extraction: The resulting mask is applied to the original crop using (`cv2.bitwise_and`) to obtain the segmented optic disc.
 
 ### Python Inference Script (`run_inference.py`)
 
@@ -148,13 +148,11 @@ best_mask = low_res_masks[0, int(np.argmax(scores[0]))]
 mask_resized = cv2.resize(best_mask, (W_orig, H_orig), interpolation=cv2.INTER_LINEAR)
 binary_mask = (mask_resized > 0.0).astype(np.uint8) * 255
 
-# Apply mask onto raw cropped image
 segmented_disc = cv2.bitwise_and(orig_crop, orig_crop, mask=binary_mask)
 
-# Save Outputs
 cv2.imwrite("output_disc.png", segmented_disc)
 cv2.imwrite("output_mask.png", binary_mask)
-print(f"[SUCCESS] Segmentation finished. Autonomous prompt placed at: ({maxLoc[0]}, {maxLoc[1]})")
+print(f"[SUCCESS] Segmentation finished. Autonomous prompt placed at crop coordinate: ({maxLoc[0]}, {maxLoc[1]})")
 ```
 
 ## 📜 License
